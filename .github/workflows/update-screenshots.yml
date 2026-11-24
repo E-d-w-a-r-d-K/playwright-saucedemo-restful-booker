@@ -1,0 +1,41 @@
+name: update screenshots
+
+# Run by hand (Actions → "update screenshots" → Run workflow) after an intended UI change.
+# It renders the pages on the same Linux runner the tests use and commits the new baselines,
+# so the change is visible and reviewable in git history. Known-bug tests are excluded:
+# a page that is expected to differ must never become the baseline.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - name: Render new Linux baselines
+        run: npm run test:visual:update
+
+      - name: Commit the baselines
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/visual/__screenshots__/linux
+          if git diff --cached --quiet; then
+            echo "Baselines are unchanged."
+          else
+            git commit -m "Update Linux visual baselines"
+            git push
+          fi

@@ -1,63 +1,99 @@
-import { expect, test } from './fixtures';
-import { newBooking } from './bookingClient';
+import { expect, test } from '../../src/fixtures/api';
+import { INVALID_BOOKINGS, INVALID_CREDENTIALS, newBooking } from '../../src/data/booking';
+import { knownBug } from '../../src/utils/knownBug';
 
 /*
- * Each test states the CORRECT behaviour and is marked test.fail() while the bug exists:
- * the suite stays green, and when the API is fixed the test reports "unexpectedly passed".
- * Bug reports: README.md, section "Знайдені баги".
+ * Each test checks the CORRECT behaviour and, while it does not hold, requires the OBSERVED buggy behaviour
+ * (see src/utils/knownBug.ts). A 503 from the sandbox, a typo or a fixed bug makes the test red.
+ * Bug reports: README.md, "Знайдені баги".
  */
-test.describe('Known API bugs (expected to fail until fixed)', () => {
-  test('BUG-API-1: wrong credentials are answered with 401', async ({ client }) => {
-    test.fail(true, 'BUG-API-1: /auth returns 200 {"reason":"Bad credentials"}');
+test.describe('Known API bugs', { tag: '@known-bug' }, () => {
+  test('BUG-API-1: wrong credentials are answered with 200 OK', async ({ client }) => {
+    // Act
+    const response = await client.auth(INVALID_CREDENTIALS);
 
-    const response = await client.auth({ username: 'admin', password: 'wrong' });
-
-    expect(response.status()).toBe(401);
+    // Assert
+    await knownBug('BUG-API-1', {
+      correct: () => expect(response.status()).toBe(401),
+      observed: async () => {
+        expect(response.status()).toBe(200);
+        expect(await response.json()).toEqual({ reason: 'Bad credentials' });
+      },
+    });
   });
 
-  test('BUG-API-2: a booking without required fields is rejected with 400', async ({ client, cleanup }) => {
-    test.fail(true, 'BUG-API-2: the API answers 500 Internal Server Error');
-
-    const response = await client.create({ firstname: 'OnlyName' });
+  test('BUG-API-2: a booking without required fields crashes with 500', async ({ client, cleanup }) => {
+    // Act
+    const response = await client.create(INVALID_BOOKINGS.missingRequiredFields);
     if (response.ok()) cleanup((await response.json()).bookingid);
 
-    expect(response.status()).toBe(400);
+    // Assert
+    await knownBug('BUG-API-2', {
+      correct: () => expect(response.status()).toBe(400),
+      observed: () => expect(response.status()).toBe(500),
+    });
   });
 
-  test('BUG-API-3: delete answers 200 or 204, not 201 Created', async ({ client, token }) => {
-    test.fail(true, 'BUG-API-3: DELETE /booking/{id} returns 201 Created');
+  test('BUG-API-3: deleting an already deleted booking answers 405', async ({ client, token }) => {
+    // Arrange
+    const id = await client.createId(newBooking());
+    expect((await client.delete(id, token)).status()).toBe(201);
 
-    const id = (await (await client.create(newBooking())).json()).bookingid;
+    // Act
     const response = await client.delete(id, token);
 
-    const status = response.status();
-    expect(status === 200 || status === 204, `DELETE should answer 200 or 204, got ${status}`).toBe(true);
+    // Assert
+    await knownBug('BUG-API-3', {
+      correct: () => expect(response.status()).toBe(404),
+      observed: () => expect(response.status()).toBe(405),
+    });
   });
 
-  test('BUG-API-4: deleting an already deleted booking answers 404', async ({ client, token }) => {
-    test.fail(true, 'BUG-API-4: the second DELETE returns 405 Method Not Allowed');
+  test('BUG-API-4: checkout before checkin is accepted', async ({ client, cleanup }) => {
+    // Arrange
+    const booking = INVALID_BOOKINGS.checkoutBeforeCheckin();
 
-    const id = (await (await client.create(newBooking())).json()).bookingid;
-    await client.delete(id, token);
-
-    expect((await client.delete(id, token)).status()).toBe(404);
-  });
-
-  test('BUG-API-5: checkout before checkin is rejected', async ({ client, cleanup }) => {
-    test.fail(true, 'BUG-API-5: the booking is created with checkout earlier than checkin');
-
-    const response = await client.create(newBooking({ bookingdates: { checkin: '2027-01-15', checkout: '2027-01-10' } }));
+    // Act
+    const response = await client.create(booking);
     if (response.ok()) cleanup((await response.json()).bookingid);
 
-    expect(response.status()).toBe(400);
+    // Assert
+    await knownBug('BUG-API-4', {
+      correct: () => expect(response.status()).toBe(400),
+      observed: async () => {
+        expect(response.status()).toBe(200);
+        expect((await response.json()).booking.bookingdates).toEqual(booking.bookingdates);
+      },
+    });
   });
 
-  test('BUG-API-6: a non-numeric price is rejected instead of being stored as null', async ({ client, cleanup }) => {
-    test.fail(true, 'BUG-API-6: totalprice "abc" is accepted and saved as null');
-
-    const response = await client.create({ ...newBooking(), totalprice: 'abc' });
+  test('BUG-API-5: a non-numeric price is stored as null', async ({ client, cleanup }) => {
+    // Act
+    const response = await client.create(INVALID_BOOKINGS.nonNumericPrice());
     if (response.ok()) cleanup((await response.json()).bookingid);
 
-    expect(response.status()).toBe(400);
+    // Assert
+    await knownBug('BUG-API-5', {
+      correct: () => expect(response.status()).toBe(400),
+      observed: async () => {
+        expect(response.status()).toBe(200);
+        expect((await response.json()).booking.totalprice).toBeNull();
+      },
+    });
+  });
+
+  test('BUG-API-6: a negative price is accepted', async ({ client, cleanup }) => {
+    // Act
+    const response = await client.create(INVALID_BOOKINGS.negativePrice());
+    if (response.ok()) cleanup((await response.json()).bookingid);
+
+    // Assert
+    await knownBug('BUG-API-6', {
+      correct: () => expect(response.status()).toBe(400),
+      observed: async () => {
+        expect(response.status()).toBe(200);
+        expect((await response.json()).booking.totalprice).toBe(-5);
+      },
+    });
   });
 });

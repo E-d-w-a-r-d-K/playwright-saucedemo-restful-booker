@@ -1,0 +1,20 @@
+{
+  "case": "06-add-from-product-page",
+  "provider": "claude-cli",
+  "model": "claude-cli default",
+  "generatedInSeconds": 54,
+  "gates": {
+    "codeBlock": true,
+    "rawSelectors": [],
+    "typecheck": "ok",
+    "run": {
+      "exitCode": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 1,
+      "flaky": 0
+    }
+  },
+  "passed": false,
+  "savedAs": null
+}

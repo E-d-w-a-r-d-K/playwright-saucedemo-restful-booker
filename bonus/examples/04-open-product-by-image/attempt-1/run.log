@@ -1,0 +1,5 @@
+Running 1 test using 1 worker
+
+  -  1 [ui] › tests\ui\generated\04-open-product-by-image.spec.ts:20:3 › Open product by image › a product page opens by clicking the product image
+
+  1 skipped

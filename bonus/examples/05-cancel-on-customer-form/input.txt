@@ -1,0 +1,12 @@
+Title: Cancel on the customer form returns to the cart
+
+Preconditions: standard_user is logged in, the cart is empty.
+
+Steps:
+1. Add "Sauce Labs Bike Light" to the cart.
+2. Open the cart and click Checkout.
+3. Without filling anything, click Cancel on the customer form.
+
+Expected result:
+- The cart page opens.
+- The cart still contains "Sauce Labs Bike Light" with price $9.99.

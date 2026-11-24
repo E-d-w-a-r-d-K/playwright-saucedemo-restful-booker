@@ -1,33 +1,5 @@
 import { type APIRequestContext, type APIResponse } from '@playwright/test';
-
-export interface BookingDates {
-  checkin: string;
-  checkout: string;
-}
-
-export interface Booking {
-  firstname: string;
-  lastname: string;
-  totalprice: number;
-  depositpaid: boolean;
-  bookingdates: BookingDates;
-  additionalneeds?: string;
-}
-
-export const CREDENTIALS = { username: 'admin', password: 'password123' };
-
-/** A booking with a unique last name, so parallel runs on the shared sandbox never collide. */
-export function newBooking(overrides: Partial<Booking> = {}): Booking {
-  return {
-    firstname: 'Eduard',
-    lastname: `QA-${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
-    totalprice: 150,
-    depositpaid: true,
-    bookingdates: { checkin: '2027-01-10', checkout: '2027-01-15' },
-    additionalneeds: 'Breakfast',
-    ...overrides,
-  };
-}
+import { type Booking, CREDENTIALS } from '../data/booking';
 
 /** Thin wrapper over restful-booker: one method per endpoint, returns the raw response. */
 export class BookingClient {
@@ -46,8 +18,16 @@ export class BookingClient {
     return body.token;
   }
 
+  /** `unknown` on purpose: negative tests send bodies that are not a valid Booking. */
   create(booking: unknown): Promise<APIResponse> {
     return this.request.post('/booking', { data: booking });
+  }
+
+  /** Creates a valid booking and returns its id; fails loudly if the API refuses. */
+  async createId(booking: Booking): Promise<number> {
+    const response = await this.create(booking);
+    if (!response.ok()) throw new Error(`POST /booking → ${response.status()}: ${await response.text()}`);
+    return (await response.json()).bookingid;
   }
 
   get(id: number): Promise<APIResponse> {

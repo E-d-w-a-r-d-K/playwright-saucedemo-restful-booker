@@ -1,0 +1,12 @@
+Title: The most expensive product goes first and can be bought
+
+Preconditions: standard_user is logged in, the cart is empty.
+
+Steps:
+1. Sort products by "Price (high to low)".
+2. Add the first product in the list to the cart.
+3. Open the cart, click Checkout, fill the customer form, click Continue.
+
+Expected result:
+- After step 1 the first product is "Sauce Labs Fleece Jacket" at $49.99.
+- On the overview: Item total $49.99, Tax $4.00, Total $53.99.

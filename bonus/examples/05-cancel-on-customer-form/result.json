@@ -1,0 +1,20 @@
+{
+  "case": "05-cancel-on-customer-form",
+  "provider": "claude-cli",
+  "model": "claude-cli default",
+  "generatedInSeconds": 9,
+  "gates": {
+    "codeBlock": true,
+    "rawSelectors": [],
+    "typecheck": "ok",
+    "run": {
+      "exitCode": 0,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "flaky": 0
+    }
+  },
+  "passed": true,
+  "savedAs": "tests/ui/generated/05-cancel-on-customer-form.spec.ts"
+}

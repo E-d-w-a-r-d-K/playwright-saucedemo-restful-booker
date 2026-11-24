@@ -1,0 +1,5 @@
+Running 1 test using 1 worker
+
+  ok 1 [ui] › tests\ui\generated\04-open-product-by-image.spec.ts:7:3 › Product page via image › clicking the product image opens the product page, and Back to products returns to the catalogue (1.1s)
+
+  1 passed (1.9s)

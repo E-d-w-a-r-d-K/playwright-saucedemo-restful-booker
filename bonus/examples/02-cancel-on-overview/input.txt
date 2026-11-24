@@ -1,0 +1,14 @@
+Title: Cancel on the checkout overview keeps the cart
+
+Preconditions: standard_user is logged in, the cart is empty.
+
+Steps:
+1. Add "Sauce Labs Fleece Jacket" to the cart.
+2. Open the cart and click Checkout.
+3. Fill first name, last name and postal code, click Continue.
+4. On the overview page click Cancel.
+
+Expected result:
+- The products page opens.
+- The cart badge still shows 1.
+- The cart still contains "Sauce Labs Fleece Jacket" with price $49.99.

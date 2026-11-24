@@ -1,0 +1,13 @@
+Title: Removing a product on the products page updates the cart
+
+Preconditions: standard_user is logged in, the cart is empty.
+
+Steps:
+1. On the products page add "Sauce Labs Bike Light" to the cart.
+2. Add "Sauce Labs Onesie" to the cart.
+3. On the products page click "Remove" on "Sauce Labs Bike Light".
+4. Open the cart.
+
+Expected result:
+- After step 3 the cart badge shows 1.
+- The cart contains only "Sauce Labs Onesie" with price $7.99.

@@ -1,0 +1,11 @@
+Title: A product can be added to the cart from its own page
+
+Preconditions: standard_user is logged in, the cart is empty.
+
+Steps:
+1. Open the product page of "Sauce Labs Onesie".
+2. Click "Add to cart" on the product page.
+
+Expected result:
+- The cart badge shows 1.
+- The button on the product page changes to "Remove".

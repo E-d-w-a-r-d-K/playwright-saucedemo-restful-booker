@@ -1,0 +1,5 @@
+Running 1 test using 1 worker
+
+  ok 1 [ui] › tests\ui\generated\05-cancel-on-customer-form.candidate.spec.ts:8:3 › Checkout - cancel on customer form › cancel on the customer form returns to the cart (1.3s)
+
+  1 passed (2.2s)

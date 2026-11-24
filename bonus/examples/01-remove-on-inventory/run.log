@@ -1,0 +1,5 @@
+Running 1 test using 1 worker
+
+  ok 1 [ui] › tests\ui\generated\01-remove-on-inventory.spec.ts:8:3 › Cart › removing a product on the products page updates the cart (894ms)
+
+  1 passed (1.8s)

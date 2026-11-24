@@ -1,0 +1,7 @@
+{
+  "case": "04-open-product-by-image",
+  "provider": "claude-cli",
+  "generatedInSeconds": 49,
+  "typecheck": "ok",
+  "passed": true
+}

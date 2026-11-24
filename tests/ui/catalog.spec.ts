@@ -1,48 +1,75 @@
-import { expect, test } from './fixtures';
-import { type SortOption, type Product } from './pages/InventoryPage';
-import { CATALOGUE } from './support/data';
+import { expect, test } from '../../src/fixtures/ui';
+import { type SortOption } from '../../src/pages/InventoryPage';
+import { CATALOGUE, type Product, product } from '../../src/data/products';
+import { ROUTES } from '../../src/data/routes';
 
-const byName = (a: Product, b: Product) => a.name.localeCompare(b.name);
+const byName = (a: Product, b: Product) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
 const byPrice = (a: Product, b: Product) => a.price - b.price;
 
 test.describe('Catalogue', () => {
   test('shows every product with its name and price', async ({ loggedIn }) => {
-    expect(await loggedIn.products()).toEqual(CATALOGUE);
+    // Arrange: logged in by the fixture
+
+    // Act + Assert: read the cards until they settle
+    await expect.poll(() => loggedIn.products()).toEqual(CATALOGUE);
   });
 
-  test('product page shows the same name, price and description as its card', async ({ page, loggedIn }) => {
-    const card = loggedIn.item('Sauce Labs Fleece Jacket');
-    const description = await card.getByTestId('inventory-item-desc').textContent();
+  test('product page shows the same name, price and description as its card', async ({ page, loggedIn, productPage }) => {
+    // Arrange
+    const jacket = product('Sauce Labs Fleece Jacket');
+    const description = await loggedIn.description(jacket.name);
 
-    await loggedIn.openDetails('Sauce Labs Fleece Jacket');
+    // Act
+    await loggedIn.openProduct(jacket.name);
 
-    await expect(page).toHaveURL(/inventory-item\.html\?id=\d+/);
-    await expect(page.getByTestId('inventory-item-name')).toHaveText('Sauce Labs Fleece Jacket');
-    await expect(page.getByTestId('inventory-item-price')).toHaveText('$49.99');
-    await expect(page.getByTestId('inventory-item-desc')).toHaveText(description!);
+    // Assert
+    await expect(page).toHaveURL(ROUTES.product);
+    await expect(productPage.name).toHaveText(jacket.name);
+    await expect(productPage.price).toHaveText(`$${jacket.price.toFixed(2)}`);
+    await expect(productPage.description).toHaveText(description);
   });
 
-  // Each option is compared with the catalogue sorted in the test, so a wrong comparator
-  // (string vs number, reversed direction) fails even when the first card happens to match.
-  const sorts: Array<{ option: SortOption; label: string; expected: Product[] }> = [
-    { option: 'az', label: 'name A to Z', expected: [...CATALOGUE].sort(byName) },
-    { option: 'za', label: 'name Z to A', expected: [...CATALOGUE].sort(byName).reverse() },
-    { option: 'lohi', label: 'price low to high', expected: [...CATALOGUE].sort((a, b) => byPrice(a, b) || byName(a, b)) },
-    { option: 'hilo', label: 'price high to low', expected: [...CATALOGUE].sort((a, b) => byPrice(b, a) || byName(a, b)) },
+  /*
+   * A to Z is also the default order, so selecting it on a fresh page would prove nothing.
+   * Every sort starts from the OPPOSITE order and then switches; the whole list is compared.
+   */
+  const nameSorts: Array<{ from: SortOption; to: SortOption; label: string; expected: Product[] }> = [
+    { from: 'za', to: 'az', label: 'name A to Z', expected: [...CATALOGUE].sort(byName) },
+    { from: 'az', to: 'za', label: 'name Z to A', expected: [...CATALOGUE].sort(byName).reverse() },
   ];
 
-  for (const { option, label, expected } of sorts) {
+  for (const { from, to, label, expected } of nameSorts) {
     test(`sorting by ${label} orders every card`, async ({ loggedIn }) => {
-      await loggedIn.sortBy(option);
+      // Arrange
+      await loggedIn.sortBy(from);
+      await expect.poll(() => loggedIn.products()).not.toEqual(expected);
 
-      const shown = await loggedIn.products();
-      if (option === 'lohi' || option === 'hilo') {
-        // two products share $15.99; their mutual order is not part of the requirement
-        expect(shown.map(p => p.price)).toEqual(expected.map(p => p.price));
-        expect(new Set(shown.map(p => p.name))).toEqual(new Set(expected.map(p => p.name)));
-      } else {
-        expect(shown).toEqual(expected);
-      }
+      // Act
+      await loggedIn.sortBy(to);
+
+      // Assert
+      await expect.poll(() => loggedIn.products()).toEqual(expected);
+    });
+  }
+
+  // Two products cost $15.99; the requirement says nothing about their mutual order,
+  // so price sorts compare the sequence of prices plus the set of products.
+  const priceSorts: Array<{ from: SortOption; to: SortOption; label: string; expected: Product[] }> = [
+    { from: 'hilo', to: 'lohi', label: 'price low to high', expected: [...CATALOGUE].sort(byPrice) },
+    { from: 'lohi', to: 'hilo', label: 'price high to low', expected: [...CATALOGUE].sort((a, b) => byPrice(b, a)) },
+  ];
+
+  for (const { from, to, label, expected } of priceSorts) {
+    test(`sorting by ${label} orders every price`, async ({ loggedIn }) => {
+      // Arrange
+      await loggedIn.sortBy(from);
+
+      // Act
+      await loggedIn.sortBy(to);
+
+      // Assert
+      await expect.poll(async () => (await loggedIn.products()).map(p => p.price)).toEqual(expected.map(p => p.price));
+      expect(new Set((await loggedIn.products()).map(p => p.name))).toEqual(new Set(CATALOGUE.map(p => p.name)));
     });
   }
 });

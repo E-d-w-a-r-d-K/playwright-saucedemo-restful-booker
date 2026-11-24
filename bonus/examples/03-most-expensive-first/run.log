@@ -1,0 +1,5 @@
+Running 1 test using 1 worker
+
+  ok 1 [ui] › tests\ui\generated\03-most-expensive-first.spec.ts:7:1 › the most expensive product goes first and can be bought (990ms)
+
+  1 passed (1.8s)

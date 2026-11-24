@@ -5,10 +5,15 @@ on:
   pull_request:
   workflow_dispatch:
 
+# one run per branch: a newer push cancels the older run
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   playwright:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -26,10 +31,38 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run UI and API tests
+      - name: Run UI, visual and API tests
         run: npx playwright test
 
-      - name: Upload HTML report
+      # Allure history (trend between runs) lives in the Actions cache.
+      - name: Restore Allure history
+        if: ${{ !cancelled() }}
+        uses: actions/cache/restore@v4
+        with:
+          path: allure-history
+          key: allure-history-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: allure-history-${{ github.ref_name }}-
+
+      - name: Build Allure report
+        if: ${{ !cancelled() }}
+        run: npm run allure:generate
+
+      - name: Save Allure history
+        if: ${{ !cancelled() }}
+        uses: actions/cache/save@v4
+        with:
+          path: allure-history
+          key: allure-history-${{ github.ref_name }}-${{ github.run_id }}
+
+      - name: Upload Allure report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: allure-report/
+          retention-days: 14
+
+      - name: Upload Playwright HTML report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
@@ -37,10 +70,31 @@ jobs:
           path: playwright-report/
           retention-days: 14
 
-      - name: Upload traces and JUnit results
+      - name: Upload JUnit results, traces and screenshot diffs
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: test-results/
           retention-days: 14
+
+      - name: Prepare Allure report for GitHub Pages
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: allure-report/
+
+  # Publishes the Allure report of the latest main run at the repository's GitHub Pages address.
+  pages:
+    needs: playwright
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

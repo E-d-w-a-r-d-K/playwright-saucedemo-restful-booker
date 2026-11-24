@@ -1,0 +1,5 @@
+Running 1 test using 1 worker
+
+  -  1 [ui] › tests\ui\generated\06-add-from-product-page.candidate.spec.ts:14:8 › Product page › a product can be added to the cart from its own page
+
+  1 skipped

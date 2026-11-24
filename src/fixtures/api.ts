@@ -1,5 +1,5 @@
 import { test as base, expect } from '@playwright/test';
-import { BookingClient } from './bookingClient';
+import { BookingClient } from '../api/BookingClient';
 
 interface ApiFixtures {
   client: BookingClient;

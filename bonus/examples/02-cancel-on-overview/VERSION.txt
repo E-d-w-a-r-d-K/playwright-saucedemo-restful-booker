@@ -1,0 +1,4 @@
+Produced by the FIRST version of bonus/generate.mjs (before the gates were added).
+That version decided pass/fail from the Playwright exit code and the summary only: no raw-selector check,
+no typecheck in the verdict, and it wrote straight into tests/ui/generated/. result.json here has that older shape.
+The reviewed test that went into the suite is tests/ui/generated/02-cancel-on-overview.spec.ts (hand and review fixes are marked there).

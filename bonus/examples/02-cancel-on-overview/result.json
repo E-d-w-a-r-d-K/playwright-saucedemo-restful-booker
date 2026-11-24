@@ -1,0 +1,13 @@
+{
+  "case": "02-cancel-on-overview",
+  "provider": "claude-cli",
+  "generatedInSeconds": 17,
+  "typecheck": "ok",
+  "summary": {
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "flaky": 0
+  },
+  "passed": true
+}

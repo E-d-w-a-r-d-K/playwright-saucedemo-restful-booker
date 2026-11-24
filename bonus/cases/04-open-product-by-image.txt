@@ -1,0 +1,11 @@
+Title: A product page opens by clicking the product image
+
+Preconditions: standard_user is logged in.
+
+Steps:
+1. On the products page click the IMAGE of "Sauce Labs Backpack" (not the name).
+2. On the product page click "Back to products".
+
+Expected result:
+- After step 1 the product page shows "Sauce Labs Backpack" and $29.99.
+- After step 2 the products page with all 6 products is shown again.

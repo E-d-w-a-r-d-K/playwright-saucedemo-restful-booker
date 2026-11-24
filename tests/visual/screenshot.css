@@ -1,0 +1,5 @@
+/* Applied only while Playwright takes a comparison screenshot.
+   The footer shows the current year ("© 2026 Sauce Labs"), which would break every baseline on 1 January. */
+[data-test="footer-copy"] {
+  visibility: hidden;
+}
