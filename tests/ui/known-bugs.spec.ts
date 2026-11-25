@@ -4,30 +4,32 @@ import { MESSAGES } from '../../src/data/messages';
 import { product } from '../../src/data/products';
 import { ROUTES } from '../../src/data/routes';
 import { knownBug } from '../../src/utils/knownBug';
+import { area, EPIC } from '../../src/utils/report';
 
 /*
  * Each test checks the CORRECT behaviour and, while it does not hold, requires the OBSERVED buggy behaviour
  * (see src/utils/knownBug.ts). The test is green only when exactly this bug is present;
  * any other failure — or a fixed bug — makes it red. Bug reports: README.md, "Знайдені баги".
  */
-test.describe('Known bugs', { tag: '@known-bug' }, () => {
+test.describe('Known bugs', { tag: '@known-bug', ...area(EPIC.ui, 'Known bugs') }, () => {
   test('BUG-UI-1: an order can be placed with an empty cart', async ({ page, header, cart, checkout, loggedIn }) => {
     // Arrange: logged in, nothing added
     await header.openCart();
-    await expect(cart.items).toHaveCount(0);
+    await expect(cart.items, 'the cart is empty').toHaveCount(0);
 
     // Act
     await cart.checkout();
 
     // Assert
     await knownBug('BUG-UI-1', {
-      correct: () => expect(page).toHaveURL(ROUTES.cart),
+      severity: 'critical',
+      correct: () => expect(page, 'the cart page is open').toHaveURL(ROUTES.cart),
       observed: async () => {
-        await expect(page).toHaveURL(ROUTES.checkoutStepOne);
+        await expect(page, 'checkout step one (customer form) is open').toHaveURL(ROUTES.checkoutStepOne);
         await checkout.fillCustomer(CUSTOMER);
-        expect(await checkout.totals()).toEqual({ itemTotal: 0, tax: 0, total: 0 });
+        expect(await checkout.totals(), 'the order totals are all $0').toEqual({ itemTotal: 0, tax: 0, total: 0 });
         await checkout.finish();
-        await expect(checkout.completeHeader).toHaveText(MESSAGES.orderComplete);
+        await expect(checkout.completeHeader, 'the order is confirmed').toHaveText(MESSAGES.orderComplete);
       },
     });
   });
@@ -43,11 +45,12 @@ test.describe('Known bugs', { tag: '@known-bug' }, () => {
 
     // Assert
     await knownBug('BUG-UI-2', {
+      severity: 'normal',
       correct: async () => {
-        await expect(checkout.error).toHaveText(MESSAGES.firstNameRequired);
-        await expect(page).toHaveURL(ROUTES.checkoutStepOne);
+        await expect(checkout.error, 'the checkout form shows the error').toHaveText(MESSAGES.firstNameRequired);
+        await expect(page, 'checkout step one (customer form) is open').toHaveURL(ROUTES.checkoutStepOne);
       },
-      observed: () => expect(page).toHaveURL(ROUTES.checkoutStepTwo),
+      observed: () => expect(page, 'checkout step two (overview) is open').toHaveURL(ROUTES.checkoutStepTwo),
     });
   });
 
@@ -60,10 +63,11 @@ test.describe('Known bugs', { tag: '@known-bug' }, () => {
     await header.resetAppState();
 
     // Assert
-    await expect(header.cartBadge).toBeHidden();
+    await expect(header.cartBadge, 'the cart badge is hidden').toBeHidden();
     await knownBug('BUG-UI-3', {
-      correct: () => expect(loggedIn.cartButton(onesie)).toHaveText('Add to cart'),
-      observed: () => expect(loggedIn.cartButton(onesie)).toHaveText('Remove'),
+      severity: 'minor',
+      correct: () => expect(loggedIn.cartButton(onesie), 'the product button says "Add to cart" again').toHaveText('Add to cart'),
+      observed: () => expect(loggedIn.cartButton(onesie), 'the product button still says "Remove"').toHaveText('Remove'),
     });
   });
 });

@@ -8,6 +8,7 @@ import { InventoryPage } from '../pages/InventoryPage';
 import { LoginPage } from '../pages/LoginPage';
 import { ProductPage } from '../pages/ProductPage';
 import { loginViaSession } from '../utils/session';
+import { step } from '../utils/step';
 
 interface UiFixtures {
   loginPage: LoginPage;
@@ -30,12 +31,14 @@ export const test = base.extend<UiFixtures>({
   checkout: async ({ page }, use) => use(new CheckoutPage(page)),
   header: async ({ page }, use) => use(new Header(page)),
   loginAs: async ({ context, inventory }, use) => {
-    await use(async user => {
-      await loginViaSession(context, env.ui.baseUrl, user);
-      await inventory.open();
-      await expect(inventory.title).toHaveText('Products');
-      return inventory;
-    });
+    await use(user =>
+      step(`Log in as "${user}" (session cookie, no form) and open the inventory`, async () => {
+        await loginViaSession(context, env.ui.baseUrl, user);
+        await inventory.open();
+        await expect(inventory.title, 'the inventory page is open').toHaveText('Products');
+        return inventory;
+      }),
+    );
   },
   loggedIn: async ({ loginAs }, use) => use(await loginAs(USERS.standard)),
 });

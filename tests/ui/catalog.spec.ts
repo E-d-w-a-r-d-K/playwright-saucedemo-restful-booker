@@ -2,16 +2,17 @@ import { expect, test } from '../../src/fixtures/ui';
 import { type SortOption } from '../../src/pages/InventoryPage';
 import { CATALOGUE, type Product, product } from '../../src/data/products';
 import { ROUTES } from '../../src/data/routes';
+import { area, EPIC } from '../../src/utils/report';
 
 const byName = (a: Product, b: Product) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
 const byPrice = (a: Product, b: Product) => a.price - b.price;
 
-test.describe('Catalogue', () => {
+test.describe('Catalogue', area(EPIC.ui, 'Catalogue'), () => {
   test('shows every product with its name and price', async ({ loggedIn }) => {
     // Arrange: logged in by the fixture
 
     // Act + Assert: read the cards until they settle
-    await expect.poll(() => loggedIn.products()).toEqual(CATALOGUE);
+    await expect.poll(() => loggedIn.products(), { message: 'the inventory shows exactly these products in this order' }).toEqual(CATALOGUE);
   });
 
   test('product page shows the same name, price and description as its card', async ({ page, loggedIn, productPage }) => {
@@ -23,10 +24,10 @@ test.describe('Catalogue', () => {
     await loggedIn.openProduct(jacket.name);
 
     // Assert
-    await expect(page).toHaveURL(ROUTES.product);
-    await expect(productPage.name).toHaveText(jacket.name);
-    await expect(productPage.price).toHaveText(`$${jacket.price.toFixed(2)}`);
-    await expect(productPage.description).toHaveText(description);
+    await expect(page, 'a product page is open').toHaveURL(ROUTES.product);
+    await expect(productPage.name, 'the product page shows the name from the card').toHaveText(jacket.name);
+    await expect(productPage.price, 'the product page shows the price from the card').toHaveText(`$${jacket.price.toFixed(2)}`);
+    await expect(productPage.description, 'the product page shows the description from the card').toHaveText(description);
   });
 
   /*
@@ -42,13 +43,13 @@ test.describe('Catalogue', () => {
     test(`sorting by ${label} orders every card`, async ({ loggedIn }) => {
       // Arrange
       await loggedIn.sortBy(from);
-      await expect.poll(() => loggedIn.products()).not.toEqual(expected);
+      await expect.poll(() => loggedIn.products(), { message: 'the list starts in a different order' }).not.toEqual(expected);
 
       // Act
       await loggedIn.sortBy(to);
 
       // Assert
-      await expect.poll(() => loggedIn.products()).toEqual(expected);
+      await expect.poll(() => loggedIn.products(), { message: 'the inventory shows exactly these products in this order' }).toEqual(expected);
     });
   }
 
@@ -68,8 +69,8 @@ test.describe('Catalogue', () => {
       await loggedIn.sortBy(to);
 
       // Assert
-      await expect.poll(async () => (await loggedIn.products()).map(p => p.price)).toEqual(expected.map(p => p.price));
-      expect(new Set((await loggedIn.products()).map(p => p.name))).toEqual(new Set(CATALOGUE.map(p => p.name)));
+      await expect.poll(async () => (await loggedIn.products()).map(p => p.price), { message: 'prices go in the expected order' }).toEqual(expected.map(p => p.price));
+      expect(new Set((await loggedIn.products()).map(p => p.name)), 'every product is still listed').toEqual(new Set(CATALOGUE.map(p => p.name)));
     });
   }
 });

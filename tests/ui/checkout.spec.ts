@@ -4,11 +4,12 @@ import { MESSAGES } from '../../src/data/messages';
 import { product } from '../../src/data/products';
 import { ROUTES } from '../../src/data/routes';
 import { cents } from '../../src/utils/money';
+import { area, EPIC, severity } from '../../src/utils/report';
 
 const order = [product('Sauce Labs Backpack'), product('Sauce Labs Bolt T-Shirt')];
 
-test.describe('Checkout', () => {
-  test('order of two products: totals add up and the order completes', async ({ page, loggedIn, header, cart, checkout }) => {
+test.describe('Checkout', area(EPIC.ui, 'Checkout'), () => {
+  test('order of two products: totals add up and the order completes', severity('critical'), async ({ page, loggedIn, header, cart, checkout }) => {
     // Arrange
     for (const item of order) await loggedIn.addToCart(item.name);
     await header.openCart();
@@ -19,23 +20,23 @@ test.describe('Checkout', () => {
 
     // Assert: the overview shows both products and the totals the site really shows for them,
     // and those totals follow the rule "item total = sum of prices, tax = 8%, total = item total + tax"
-    await expect(page).toHaveURL(ROUTES.checkoutStepTwo);
-    await expect(checkout.overviewItems).toHaveCount(order.length);
+    await expect(page, 'checkout step two (overview) is open').toHaveURL(ROUTES.checkoutStepTwo);
+    await expect(checkout.overviewItems, 'the overview lists every ordered product').toHaveCount(order.length);
     const totals = await checkout.totals();
-    expect(totals).toEqual(BACKPACK_AND_BOLT_TOTALS);
+    expect(totals, 'the overview shows item total $45.98, tax $3.68, total $49.66').toEqual(BACKPACK_AND_BOLT_TOTALS);
     const itemTotal = cents(order.reduce((sum, p) => sum + p.price, 0));
     const tax = cents(itemTotal * TAX_RATE);
-    expect(totals).toEqual({ itemTotal, tax, total: cents(itemTotal + tax) });
+    expect(totals, 'totals follow the rule: sum of prices + 8% tax').toEqual({ itemTotal, tax, total: cents(itemTotal + tax) });
 
     // Act: finish
     await checkout.finish();
 
     // Assert: the order is complete and the cart is empty
-    await expect(page).toHaveURL(ROUTES.checkoutComplete);
-    await expect(checkout.completeHeader).toHaveText(MESSAGES.orderComplete);
-    await expect(header.cartBadge).toBeHidden();
+    await expect(page, 'the order completion page is open').toHaveURL(ROUTES.checkoutComplete);
+    await expect(checkout.completeHeader, 'the order is confirmed').toHaveText(MESSAGES.orderComplete);
+    await expect(header.cartBadge, 'the cart badge is hidden').toBeHidden();
     await cart.open();
-    await expect(cart.items).toHaveCount(0);
+    await expect(cart.items, 'the cart is empty').toHaveCount(0);
   });
 
   test.describe('negative', () => {
@@ -58,8 +59,8 @@ test.describe('Checkout', () => {
         await checkout.fillCustomer(customer);
 
         // Assert
-        await expect(checkout.error).toHaveText(message);
-        await expect(page).toHaveURL(ROUTES.checkoutStepOne);
+        await expect(checkout.error, 'the checkout form shows the error').toHaveText(message);
+        await expect(page, 'checkout step one (customer form) is open').toHaveURL(ROUTES.checkoutStepOne);
       });
     }
   });

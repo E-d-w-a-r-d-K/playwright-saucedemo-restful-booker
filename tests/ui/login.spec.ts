@@ -3,9 +3,10 @@ import { MESSAGES } from '../../src/data/messages';
 import { CATALOGUE } from '../../src/data/products';
 import { ROUTES } from '../../src/data/routes';
 import { INVALID_PASSWORD, PASSWORD, USERNAME_WRONG_CASE, USERS } from '../../src/data/users';
+import { area, EPIC, severity } from '../../src/utils/report';
 
-test.describe('Login', () => {
-  test('standard_user logs in through the form and sees the full catalogue', async ({ page, loginPage, inventory }) => {
+test.describe('Login', area(EPIC.ui, 'Login'), () => {
+  test('standard_user logs in through the form and sees the full catalogue', severity('critical'), async ({ page, loginPage, inventory }) => {
     // Arrange
     await loginPage.open();
 
@@ -13,9 +14,9 @@ test.describe('Login', () => {
     await loginPage.login(USERS.standard, PASSWORD);
 
     // Assert
-    await expect(page).toHaveURL(ROUTES.inventory);
-    await expect(inventory.title).toHaveText('Products');
-    await expect(inventory.items).toHaveCount(CATALOGUE.length);
+    await expect(page, 'the inventory page is open').toHaveURL(ROUTES.inventory);
+    await expect(inventory.title, 'the inventory page is open').toHaveText('Products');
+    await expect(inventory.items, 'every product of the catalogue is shown').toHaveCount(CATALOGUE.length);
   });
 
   test('logout returns to the login form and closes access to the inventory', async ({ loggedIn, header, loginPage, inventory }) => {
@@ -25,9 +26,9 @@ test.describe('Login', () => {
     await header.logout();
 
     // Assert
-    await expect(loginPage.loginButton).toBeVisible();
+    await expect(loginPage.loginButton, 'the login form is shown').toBeVisible();
     await inventory.open();
-    await expect(loginPage.error).toHaveText(MESSAGES.notLoggedIn);
+    await expect(loginPage.error, 'the login form shows the error').toHaveText(MESSAGES.notLoggedIn);
   });
 
   test.describe('negative and boundary', () => {
@@ -39,8 +40,8 @@ test.describe('Login', () => {
       await loginPage.login(USERS.standard, INVALID_PASSWORD);
 
       // Assert
-      await expect(loginPage.error).toHaveText(MESSAGES.wrongPassword);
-      await expect(page).not.toHaveURL(ROUTES.inventory);
+      await expect(loginPage.error, 'the login form shows the error').toHaveText(MESSAGES.wrongPassword);
+      await expect(page, 'the inventory page is not opened').not.toHaveURL(ROUTES.inventory);
     });
 
     test('username is case-sensitive: "Standard_User" is not standard_user', async ({ page, loginPage }) => {
@@ -51,8 +52,8 @@ test.describe('Login', () => {
       await loginPage.login(USERNAME_WRONG_CASE, PASSWORD);
 
       // Assert
-      await expect(loginPage.error).toHaveText(MESSAGES.wrongPassword);
-      await expect(page).not.toHaveURL(ROUTES.inventory);
+      await expect(loginPage.error, 'the login form shows the error').toHaveText(MESSAGES.wrongPassword);
+      await expect(page, 'the inventory page is not opened').not.toHaveURL(ROUTES.inventory);
     });
 
     test('locked_out_user cannot log in', async ({ page, loginPage }) => {
@@ -63,8 +64,8 @@ test.describe('Login', () => {
       await loginPage.login(USERS.lockedOut, PASSWORD);
 
       // Assert
-      await expect(loginPage.error).toHaveText(MESSAGES.lockedOut);
-      await expect(page).not.toHaveURL(ROUTES.inventory);
+      await expect(loginPage.error, 'the login form shows the error').toHaveText(MESSAGES.lockedOut);
+      await expect(page, 'the inventory page is not opened').not.toHaveURL(ROUTES.inventory);
     });
 
     test('empty form asks for the username first', async ({ loginPage }) => {
@@ -75,7 +76,7 @@ test.describe('Login', () => {
       await loginPage.submitEmpty();
 
       // Assert
-      await expect(loginPage.error).toHaveText(MESSAGES.usernameRequired);
+      await expect(loginPage.error, 'the login form shows the error').toHaveText(MESSAGES.usernameRequired);
     });
 
     test('inventory is closed without a session', async ({ inventory, loginPage }) => {
@@ -85,8 +86,8 @@ test.describe('Login', () => {
       await inventory.open();
 
       // Assert
-      await expect(loginPage.error).toHaveText(MESSAGES.notLoggedIn);
-      await expect(loginPage.loginButton).toBeVisible();
+      await expect(loginPage.error, 'the login form shows the error').toHaveText(MESSAGES.notLoggedIn);
+      await expect(loginPage.loginButton, 'the login form is shown').toBeVisible();
     });
   });
 });

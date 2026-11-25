@@ -1,4 +1,5 @@
 import { type Locator, type Page } from '@playwright/test';
+import { step } from '../../utils/step';
 
 /** The header shown on every page after login: burger menu and cart icon. */
 export class Header {
@@ -11,17 +12,21 @@ export class Header {
   }
 
   async openCart() {
-    await this.cartLink.click();
+    await step('Open the cart from the header', () => this.cartLink.click());
   }
 
   async logout() {
-    await this.openMenu();
-    await this.page.getByTestId('logout-sidebar-link').click();
+    await step('Log out from the menu', async () => {
+      await this.openMenu();
+      await this.page.getByTestId('logout-sidebar-link').click();
+    });
   }
 
   async resetAppState() {
-    await this.openMenu();
-    await this.page.getByTestId('reset-sidebar-link').click();
+    await step('Reset App State from the menu', async () => {
+      await this.openMenu();
+      await this.page.getByTestId('reset-sidebar-link').click();
+    });
   }
 
   private async openMenu() {

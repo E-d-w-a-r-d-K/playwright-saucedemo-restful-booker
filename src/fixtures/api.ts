@@ -1,5 +1,6 @@
 import { test as base, expect } from '@playwright/test';
 import { BookingClient } from '../api/BookingClient';
+import { step } from '../utils/step';
 
 interface ApiFixtures {
   client: BookingClient;
@@ -14,7 +15,11 @@ export const test = base.extend<ApiFixtures>({
   cleanup: async ({ client, token }, use) => {
     const ids: number[] = [];
     await use(id => ids.push(id));
-    for (const id of ids) await client.delete(id, token);
+    if (ids.length > 0) {
+      await step(`Clean up: delete booking(s) ${ids.join(', ')}`, async () => {
+        for (const id of ids) await client.delete(id, token);
+      });
+    }
   },
 });
 

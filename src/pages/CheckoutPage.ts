@@ -1,6 +1,7 @@
 import { type Locator, type Page } from '@playwright/test';
 import { type Customer } from '../data/checkout';
 import { parsePrice } from '../utils/money';
+import { step } from '../utils/step';
 
 export interface Totals {
   itemTotal: number;
@@ -33,10 +34,12 @@ export class CheckoutPage {
   }
 
   async fillCustomer(customer: Customer) {
-    await this.firstName.fill(customer.firstName);
-    await this.lastName.fill(customer.lastName);
-    await this.postalCode.fill(customer.postalCode);
-    await this.continueButton.click();
+    await step(`Fill in the customer form ("${customer.firstName}" / "${customer.lastName}" / "${customer.postalCode}") and continue`, async () => {
+      await this.firstName.fill(customer.firstName);
+      await this.lastName.fill(customer.lastName);
+      await this.postalCode.fill(customer.postalCode);
+      await this.continueButton.click();
+    });
   }
 
   /** Reads "Item total: $45.98", "Tax: $3.68", "Total: $49.66" from the overview step. */
@@ -49,10 +52,10 @@ export class CheckoutPage {
   }
 
   async cancel() {
-    await this.cancelButton.click();
+    await step('Press Cancel', () => this.cancelButton.click());
   }
 
   async finish() {
-    await this.finishButton.click();
+    await step('Press Finish', () => this.finishButton.click());
   }
 }

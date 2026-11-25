@@ -1,4 +1,5 @@
 import { type Locator, type Page } from '@playwright/test';
+import { step } from '../utils/step';
 
 /** A single product page: /inventory-item.html?id=N */
 export class ProductPage {
@@ -15,6 +16,6 @@ export class ProductPage {
   }
 
   async backToProducts() {
-    await this.backButton.click();
+    await step('Press "Back to products"', () => this.backButton.click());
   }
 }

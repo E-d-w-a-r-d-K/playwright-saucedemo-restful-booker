@@ -1,8 +1,16 @@
 import { type Locator, type Page } from '@playwright/test';
 import { type Product } from '../data/products';
 import { parsePrice } from '../utils/money';
+import { step } from '../utils/step';
 
 export type SortOption = 'az' | 'za' | 'lohi' | 'hilo';
+
+const SORT_LABELS: Record<SortOption, string> = {
+  az: 'Name (A to Z)',
+  za: 'Name (Z to A)',
+  lohi: 'Price (low to high)',
+  hilo: 'Price (high to low)',
+};
 
 export class InventoryPage {
   readonly title: Locator;
@@ -16,7 +24,7 @@ export class InventoryPage {
   }
 
   async open() {
-    await this.page.goto('/inventory.html');
+    await step('Open the inventory page by URL', () => this.page.goto('/inventory.html'));
   }
 
   /** Name and numeric price of every card, in the order shown on the page. */
@@ -42,24 +50,26 @@ export class InventoryPage {
   }
 
   async addToCart(name: string) {
-    await this.card(name).getByRole('button', { name: 'Add to cart' }).click();
+    await step(`Add "${name}" to the cart`, () => this.card(name).getByRole('button', { name: 'Add to cart' }).click());
   }
 
   async removeFromCart(name: string) {
-    await this.card(name).getByRole('button', { name: 'Remove' }).click();
+    await step(`Remove "${name}" on the inventory page`, () =>
+      this.card(name).getByRole('button', { name: 'Remove' }).click(),
+    );
   }
 
   async sortBy(option: SortOption) {
-    await this.sort.selectOption(option);
+    await step(`Sort the products: ${SORT_LABELS[option]}`, () => this.sort.selectOption(option));
   }
 
   async openProduct(name: string) {
-    await this.card(name).getByTestId('inventory-item-name').click();
+    await step(`Open "${name}" by its name`, () => this.card(name).getByTestId('inventory-item-name').click());
   }
 
   /** Opens the product page through the picture link (data-test="item-<id>-img-link"). */
   async openProductByImage(name: string) {
-    await this.card(name).getByTestId(/^item-\d+-img-link$/).click();
+    await step(`Open "${name}" by its picture`, () => this.card(name).getByTestId(/^item-\d+-img-link$/).click());
   }
 
   private card(name: string): Locator {

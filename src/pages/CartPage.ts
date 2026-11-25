@@ -1,6 +1,7 @@
 import { type Locator, type Page } from '@playwright/test';
 import { type Product } from '../data/products';
 import { parsePrice } from '../utils/money';
+import { step } from '../utils/step';
 
 export class CartPage {
   readonly items: Locator;
@@ -12,7 +13,7 @@ export class CartPage {
   }
 
   async open() {
-    await this.page.goto('/cart.html');
+    await step('Open the cart page by URL', () => this.page.goto('/cart.html'));
   }
 
   async products(): Promise<Product[]> {
@@ -22,13 +23,15 @@ export class CartPage {
   }
 
   async remove(name: string) {
-    await this.items
-      .filter({ has: this.page.getByTestId('inventory-item-name').getByText(name, { exact: true }) })
-      .getByRole('button', { name: 'Remove' })
-      .click();
+    await step(`Remove "${name}" in the cart`, () =>
+      this.items
+        .filter({ has: this.page.getByTestId('inventory-item-name').getByText(name, { exact: true }) })
+        .getByRole('button', { name: 'Remove' })
+        .click(),
+    );
   }
 
   async checkout() {
-    await this.checkoutButton.click();
+    await step('Press Checkout', () => this.checkoutButton.click());
   }
 }

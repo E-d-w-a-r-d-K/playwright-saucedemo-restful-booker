@@ -1,4 +1,5 @@
 import { type Locator, type Page } from '@playwright/test';
+import { step } from '../utils/step';
 
 export class LoginPage {
   readonly username: Locator;
@@ -14,16 +15,18 @@ export class LoginPage {
   }
 
   async open() {
-    await this.page.goto('/');
+    await step('Open the login page', () => this.page.goto('/'));
   }
 
   async login(username: string, password: string) {
-    await this.username.fill(username);
-    await this.password.fill(password);
-    await this.loginButton.click();
+    await step(`Log in through the form as "${username}"`, async () => {
+      await this.username.fill(username);
+      await this.password.fill(password);
+      await this.loginButton.click();
+    });
   }
 
   async submitEmpty() {
-    await this.loginButton.click();
+    await step('Press Login with empty fields', () => this.loginButton.click());
   }
 }

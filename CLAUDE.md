@@ -30,6 +30,13 @@ for https://restful-booker.herokuapp.com on Playwright + TypeScript, reported wi
 - Every test is independent: its own login, its own data. API tests create their own bookings with a unique
   last name and register them with `cleanup(id)` right after creation.
 - Prices are compared as numbers (`parsePrice`), money rounded to cents (`cents`).
+- The report must read as reproduction steps. Every page-object action and every API call is wrapped in `step()`
+  (`src/utils/step.ts`) with a title that names the data (`Add "Sauce Labs Backpack" to the cart`, `POST /booking`);
+  read-only queries polled by `expect.poll` stay without a step. Every assertion has a title — the expect message,
+  `expect(header.cartBadge, 'the cart badge shows 1')` or `expect.poll(fn, { message: '…' })` — which becomes the step name.
+- Allure metadata (`src/utils/report.ts`): every describe block carries `area(EPIC.<ui|visual|api>, '<Feature>')`;
+  the main happy path of a feature carries `severity('critical')`; `knownBug()` takes the severity stated in the bug report
+  and links the test to it (README anchor = bug id).
 - Screenshots: baselines are written only by `npm run test:visual:update` (locally, win32) or the
   "update screenshots" workflow (linux); `updateSnapshots` is `none` for normal runs. Known-bug visual tests are
   excluded from updates.
