@@ -1,8 +1,8 @@
 {
-  "name": "allright-qa-test",
+  "name": "playwright-saucedemo-restful-booker",
   "version": "1.0.0",
   "private": true,
-  "description": "UI tests for saucedemo.com and API tests for restful-booker on Playwright + TypeScript",
+  "description": "UI, screenshot and API tests for saucedemo.com and restful-booker on Playwright + TypeScript, reported with Allure",
   "author": "Eduard Krykota",
   "license": "ISC",
   "type": "commonjs",
