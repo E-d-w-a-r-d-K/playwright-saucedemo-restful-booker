@@ -15,18 +15,19 @@ export class ProductPage {
     this.price = page.getByTestId('inventory-item-price');
     this.description = page.getByTestId('inventory-item-desc');
     this.backButton = page.getByTestId('back-to-products');
-    this.cartButton = page.getByRole('button', { name: /^(Add to cart|Remove)$/ });
+    this.cartButton = page.getByTestId(/^(add-to-cart|remove)$/);
   }
 
   async backToProducts() {
     await step('Press "Back to products"', () => this.backButton.click());
   }
 
+  // data-test "add-to-cart" / "remove" exactly: catalogue cards use "add-to-cart-<product>", so these match only here
   async addToCart() {
-    await step('Press "Add to cart" on the product page', () => this.page.getByRole('button', { name: 'Add to cart', exact: true }).click());
+    await step('Press "Add to cart" on the product page', () => this.page.getByTestId('add-to-cart').click());
   }
 
   async removeFromCart() {
-    await step('Press "Remove" on the product page', () => this.page.getByRole('button', { name: 'Remove', exact: true }).click());
+    await step('Press "Remove" on the product page', () => this.page.getByTestId('remove').click());
   }
 }

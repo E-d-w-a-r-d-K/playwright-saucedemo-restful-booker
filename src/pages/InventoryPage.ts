@@ -67,8 +67,7 @@ export class InventoryPage {
   async openProduct(name: string) {
     await step(`Open "${name}" by its name`, async () => {
       await this.card(name).getByTestId('inventory-item-name').click();
-      // the action ends on the product page: until then the inventory names also match the product page locators
-      await this.page.waitForURL(ROUTES.product);
+      await this.waitForProductPage();
     });
   }
 
@@ -76,8 +75,18 @@ export class InventoryPage {
   async openProductByImage(name: string) {
     await step(`Open "${name}" by its picture`, async () => {
       await this.card(name).getByTestId(/^item-\d+-img-link$/).click();
-      await this.page.waitForURL(ROUTES.product);
+      await this.waitForProductPage();
     });
+  }
+
+  /**
+   * The action ends when the product page has replaced the catalogue. The URL changes first, and for a moment the
+   * catalogue's names and buttons are still in the DOM and would match the product page locators.
+   */
+  private async waitForProductPage() {
+    await this.page.waitForURL(ROUTES.product);
+    await this.page.getByTestId('back-to-products').waitFor();
+    await this.items.nth(1).waitFor({ state: 'detached' });
   }
 
   private card(name: string): Locator {
