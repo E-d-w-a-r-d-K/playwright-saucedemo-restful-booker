@@ -79,6 +79,26 @@ test.describe('Login', area(EPIC.ui, 'Login'), () => {
       await expect(loginPage.error, 'the login form shows the error').toHaveText(MESSAGES.usernameRequired);
     });
 
+    // One field empty, the other filled: the message proves which field the form validated.
+    const oneFieldEmpty = [
+      { field: 'password', username: USERS.standard, password: '', message: MESSAGES.passwordRequired },
+      { field: 'username', username: '', password: PASSWORD, message: MESSAGES.usernameRequired },
+    ];
+
+    for (const { field, username, password, message } of oneFieldEmpty) {
+      test(`empty ${field} with the other field filled is rejected`, async ({ page, loginPage }) => {
+        // Arrange
+        await loginPage.open();
+
+        // Act
+        await loginPage.login(username, password);
+
+        // Assert: the error first — it proves the submit was handled, so the URL check below is not vacuous
+        await expect(loginPage.error, 'the login form shows the error').toHaveText(message);
+        await expect(page, 'the inventory page is not opened').not.toHaveURL(ROUTES.inventory);
+      });
+    }
+
     test('inventory is closed without a session', async ({ inventory, loginPage }) => {
       // Arrange: no login at all
 

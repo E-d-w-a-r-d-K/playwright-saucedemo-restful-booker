@@ -1,6 +1,7 @@
 import { expect, test } from '../../../src/fixtures/ui';
 import { CUSTOMER } from '../../../src/data/checkout';
 import { product } from '../../../src/data/products';
+import { ROUTES } from '../../../src/data/routes';
 import { area, EPIC } from '../../../src/utils/report';
 
 const fleeceJacket = product('Sauce Labs Fleece Jacket');
@@ -17,7 +18,7 @@ test.describe('Checkout overview cancel', area(EPIC.ui, 'Checkout'), () => {
     await checkout.cancel();
 
     // Assert
-    await expect(page, 'the inventory page is open').toHaveURL(/inventory\.html$/);
+    await expect(page, 'the inventory page is open').toHaveURL(ROUTES.inventory); // hand fix: URL pattern from src/data, not an inline regex
     await expect(loggedIn.title, 'the inventory page is open').toHaveText('Products');
     await expect(header.cartBadge, 'the cart badge shows 1').toHaveText('1');
 

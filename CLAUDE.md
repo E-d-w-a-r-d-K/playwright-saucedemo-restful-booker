@@ -38,8 +38,13 @@ for https://restful-booker.herokuapp.com on Playwright + TypeScript, reported wi
   the main happy path of a feature carries `severity('critical')`; `knownBug()` takes the severity stated in the bug report
   and links the test to it (README anchor = bug id).
 - Screenshots: baselines are written only by `npm run test:visual:update` (locally, win32) or the
-  "update screenshots" workflow (linux); `updateSnapshots` is `none` for normal runs. Known-bug visual tests are
-  excluded from updates.
+  "update screenshots" workflow (linux); `updateSnapshots` is `none` for normal runs. Known-bug (`@known-bug`) and
+  sensitivity (`@mutation`) tests are excluded from updates. Tolerance is `maxDiffPixels: 10`, `threshold: 0.05`:
+  never loosen it without re-running the sensitivity tests in `tests/visual` (src/utils/visual.ts lists the changes
+  they must catch). On an OS without baselines the visual tests skip with the reason.
+- When the failure of `correct` is itself the evidence (a screenshot diff), pass `correctFailsWith` to `knownBug()`
+  so a missing baseline or a timeout is not counted as the bug. `correct` must be a positive state that cannot
+  hold by accident (e.g. "Checkout is disabled"), never "nothing has changed yet" right after an action.
 
 ## Checks before saying "done"
 - `npm run typecheck` passes.

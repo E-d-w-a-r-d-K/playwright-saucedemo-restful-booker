@@ -1,5 +1,6 @@
 import { expect, test } from '../../../src/fixtures/ui';
-import { CUSTOMER } from '../../../src/data/checkout';
+import { CUSTOMER, FLEECE_JACKET_TOTALS } from '../../../src/data/checkout';
+import { MESSAGES } from '../../../src/data/messages';
 import { product } from '../../../src/data/products';
 import { area, EPIC } from '../../../src/utils/report';
 
@@ -19,5 +20,9 @@ test('the most expensive product goes first and can be bought', area(EPIC.ui, 'C
   await checkout.fillCustomer(CUSTOMER);
 
   // Assert: totals on the overview step
-  expect(await checkout.totals(), 'the overview shows the totals for the jacket').toEqual({ itemTotal: 49.99, tax: 4.0, total: 53.99 });
+  expect(await checkout.totals(), 'the overview shows the totals for the jacket').toEqual(FLEECE_JACKET_TOTALS); // hand fix: totals from src/data
+
+  // hand fix: the title says "can be bought", but the case stopped at the overview — finish the order
+  await checkout.finish();
+  await expect(checkout.completeHeader, 'the order is confirmed').toHaveText(MESSAGES.orderComplete);
 });

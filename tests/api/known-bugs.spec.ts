@@ -33,7 +33,11 @@ test.describe('Known API bugs', { tag: '@known-bug', ...area(EPIC.api, 'Known bu
     await knownBug('BUG-API-2', {
       severity: 'normal',
       correct: () => expect(response.status(), 'the invalid booking is rejected with 400').toBe(400),
-      observed: () => expect(response.status(), 'the API crashes with 500').toBe(500),
+      // status AND the application's own plain-text body, so a proxy or platform error page is not taken for the bug
+      observed: async () => {
+        expect(response.status(), 'the API crashes with 500').toBe(500);
+        expect(await response.text(), 'the body is the application error text').toBe('Internal Server Error');
+      },
     });
   });
 
@@ -49,7 +53,10 @@ test.describe('Known API bugs', { tag: '@known-bug', ...area(EPIC.api, 'Known bu
     await knownBug('BUG-API-3', {
       severity: 'minor',
       correct: () => expect(response.status(), 'the second DELETE answers 404').toBe(404),
-      observed: () => expect(response.status(), 'the second DELETE answers 405').toBe(405),
+      observed: async () => {
+        expect(response.status(), 'the second DELETE answers 405').toBe(405);
+        expect(await response.text(), 'the body is "Method Not Allowed"').toBe('Method Not Allowed');
+      },
     });
   });
 

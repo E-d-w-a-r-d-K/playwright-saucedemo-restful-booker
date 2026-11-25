@@ -10,9 +10,11 @@ export default defineConfig({
     toHaveScreenshot: {
       animations: 'disabled',
       caret: 'hide',
-      // baselines are per platform, so a matching page differs by a few anti-aliased pixels at most;
-      // a ratio (1% of a full page is ~20 000 px) would let a whole broken product picture through
-      maxDiffPixels: 100,
+      // Baselines are per platform, so an unchanged page renders identically (0 px measured on Windows and Linux).
+      // The smallest regression the visual tests prove is caught — one letter of a title — is ~28 px
+      // (src/utils/visual.ts); a looser tolerance or the default colour threshold 0.2 let it through.
+      maxDiffPixels: 10,
+      threshold: 0.05,
       stylePath: './tests/visual/screenshot.css',
     },
   },

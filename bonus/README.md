@@ -17,7 +17,10 @@ node bonus/generate.mjs bonus/cases/05-cancel-on-customer-form.txt
    приклади нижче зроблені через `claude -p`.
 4. **Запобіжники**, через які відповідь має пройти, перш ніж потрапить у тести:
    - у відповіді є блок ```` ```ts ```` (текст замість коду не зберігається як spec);
-   - у spec немає сирих селекторів і пауз (`getBy*`, `locator()`, `$()`, `waitForTimeout`, `xpath=`, `css=`);
+   - у spec немає сирих селекторів і пауз (`getBy*`, `locator()`, `$()`, `$eval`, рядкових селекторів на `page` на
+     кшталт `page.click('#id')`, `page.evaluate`, `waitForTimeout`, `xpath=`, `css=`);
+   - у spec є хоча б одна перевірка, і жодна не перевіряє константу (`expect(true)` проходить за будь-якої сторінки) —
+     тест, що пройшов, має вміти й упасти;
    - проєкт проходить перевірку типів разом із цим spec;
    - Playwright запускає його: хоча б один тест пройшов, жодного пропущеного, впалого чи нестабільного.
 5. Spec спершу пишеться як `tests/ui/generated/<кейс>.candidate.spec.ts`. Лише якщо всі перевірки пройдено **і**
@@ -34,13 +37,15 @@ node bonus/generate.mjs bonus/cases/05-cancel-on-customer-form.txt
 ## Приклади
 
 Кейси 01–04 зроблені **першою версією** скрипта (без запобіжників) — у кожній папці є `VERSION.txt`.
-Кейси 05–06 — поточною.
+Кейси 05–06 — версією з запобіжниками, ще без двох останніх: перевірки на наявність перевірок і розширеного
+списку селекторів. Ці дві перевірки прогнані окремо на збереженому виводі моделі для всіх шести кейсів: усі
+проходять (2–4 перевірки на spec, жодної на константу, жодного сирого селектора).
 
 | Кейс | Що згенерувалось | Результат | Що правили руками |
 |---|---|---|---|
 | [01-remove-on-inventory](examples/01-remove-on-inventory) | Додати 2 товари, видалити один на сторінці товарів; лічильник 1, у кошику лише Onesie | пройшов | review fix: читання кошика з повтором (`expect.poll`) |
 | [02-cancel-on-overview](examples/02-cancel-on-overview) | Чекаут → Cancel на огляді → сторінка товарів, кошик зберігся | пройшов | hand fix: дані покупця були вписані прямо в тест — замінено на `CUSTOMER`; review fix: `expect.poll` |
-| [03-most-expensive-first](examples/03-most-expensive-first) | Сортування «ціна ↓», перший — Fleece Jacket, суми $49.99 / $4.00 / $53.99 | пройшов | review fix: `expect.poll` |
+| [03-most-expensive-first](examples/03-most-expensive-first) | Сортування «ціна ↓», перший — Fleece Jacket, суми $49.99 / $4.00 / $53.99 | пройшов | review fix: `expect.poll`; hand fix: суми з `src/data`; назва кейсу обіцяє «can be bought», а кроки закінчувались на огляді — тест завершує замовлення |
 | [04-open-product-by-image](examples/04-open-product-by-image) | **Спроба 1** ([attempt-1](examples/04-open-product-by-image/attempt-1)): методу кліку по картинці й кнопки Back to products не було — модель не вигадала селектори, а дала тест зі `skip` і TODO. **Спроба 2** після ручних правок — повний тест | спроба 1 — пропущений (перша версія скрипта помилково записала `passed: true`); спроба 2 — пройшов | додано `InventoryPage.openProductByImage()` і `ProductPage.backToProducts()`; формат ціни через `toFixed(2)` (на поточних цінах тест працював і без цього — правка, щоб не залежати від перетворення числа в рядок); review fix: `expect.poll` |
 | [05-cancel-on-customer-form](examples/05-cancel-on-customer-form) | Чекаут → Cancel на формі покупця → кошик, товар на місці. Використав `ROUTES` і `expect.poll` | **пройшов усі перевірки, збережений автоматично** | нічого |
 | [06-add-from-product-page](examples/06-add-from-product-page) | Методу «Add to cart» на сторінці товару немає — модель написала, чого бракує, і пропустила тест | **відхилений**: 1 skipped → FAILED, кандидат прибраний із `tests/` | — (щоб тест з'явився, треба додати метод у `ProductPage` і перезапустити) |

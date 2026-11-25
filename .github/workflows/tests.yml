@@ -2,8 +2,13 @@ name: tests
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
+
+# read-only by default; the pages job asks for what it needs
+permissions:
+  contents: read
 
 # one run per branch: a newer push cancels the older run
 concurrency:
@@ -12,7 +17,8 @@ concurrency:
 
 jobs:
   playwright:
-    runs-on: ubuntu-latest
+    # pinned, not ubuntu-latest: the linux screenshot baselines depend on this image's fonts and rendering
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -88,7 +94,7 @@ jobs:
   pages:
     needs: playwright
     if: ${{ !cancelled() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       pages: write
       id-token: write

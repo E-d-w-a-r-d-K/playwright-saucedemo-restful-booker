@@ -7,6 +7,11 @@ export interface KnownBugChecks {
   severity: Severity;
   /** The behaviour the product SHOULD have. Expected to fail while the bug exists. */
   correct: () => Promise<unknown> | unknown;
+  /**
+   * The reason `correct` must fail with, when the failure itself is the evidence (e.g. a pixel diff of a screenshot).
+   * Any other failure of `correct` — a missing baseline, a timeout — makes the test fail instead of counting as the bug.
+   */
+  correctFailsWith?: RegExp;
   /** The buggy behaviour as it is observed today. Must pass — this is the proof that the bug, and nothing else, is what we see. */
   observed: () => Promise<unknown> | unknown;
 }
@@ -25,20 +30,30 @@ export async function knownBug(id: string, checks: KnownBugChecks): Promise<void
   await allure.severity(checks.severity);
   await allure.issue(id, bugReportUrl(id));
 
-  let correctHolds = true;
+  let failure: unknown;
   await test.step(`${id}: correct behaviour (expected to fail while the bug exists)`, async () => {
     try {
       await checks.correct();
-    } catch {
-      correctHolds = false;
+    } catch (error) {
+      failure = error ?? new Error('correct() threw without an error');
     }
   });
 
-  if (correctHolds) {
+  if (failure === undefined) {
     throw new Error(`${id}: the correct behaviour holds now — the bug looks fixed. Move this check into the regular tests.`);
+  }
+  if (checks.correctFailsWith) {
+    const message = stripAnsi(failure instanceof Error ? failure.message : String(failure));
+    if (!checks.correctFailsWith.test(message)) {
+      throw new Error(`${id}: the correct behaviour failed for another reason than the bug:\n${message}`);
+    }
   }
 
   await test.step(`${id}: the observed buggy behaviour is confirmed`, async () => {
     await checks.observed();
   });
+}
+
+function stripAnsi(text: string): string {
+  return text.replace(/\u001b\[[0-9;]*m/g, '');
 }

@@ -17,14 +17,13 @@ test.describe('Known bugs', { tag: '@known-bug', ...area(EPIC.ui, 'Known bugs') 
     await header.openCart();
     await expect(cart.items, 'the cart is empty').toHaveCount(0);
 
-    // Act
-    await cart.checkout();
-
-    // Assert
+    // Act + Assert. The correct behaviour is a positive state (Checkout is unavailable), not "still on the cart":
+    // right after a click the page has not navigated yet, so "still on the cart" would hold by accident.
     await knownBug('BUG-UI-1', {
       severity: 'critical',
-      correct: () => expect(page, 'the cart page is open').toHaveURL(ROUTES.cart),
+      correct: () => expect(cart.checkoutButton, 'Checkout is disabled for an empty cart').toBeDisabled(),
       observed: async () => {
+        await cart.checkout();
         await expect(page, 'checkout step one (customer form) is open').toHaveURL(ROUTES.checkoutStepOne);
         await checkout.fillCustomer(CUSTOMER);
         expect(await checkout.totals(), 'the order totals are all $0').toEqual({ itemTotal: 0, tax: 0, total: 0 });

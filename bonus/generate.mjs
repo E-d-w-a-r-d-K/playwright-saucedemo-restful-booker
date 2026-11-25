@@ -12,7 +12,9 @@
  *      - if ANTHROPIC_API_KEY is set: the Anthropic Messages API directly (model from GEN_MODEL).
  * 4. Gates the answer before it can enter the suite:
  *      - the answer must contain a ```ts block (no prose saved as a spec);
- *      - no raw selectors / sleeps in the spec (getBy*, locator(), $(), waitForTimeout, xpath, css=);
+ *      - no raw selectors / sleeps in the spec (getBy*, locator(), $(), $eval, page.click('…') and other string
+ *        selectors on page, page.evaluate, waitForTimeout, xpath=, css=);
+ *      - at least one assertion, and none on a constant (expect(true) passes whatever the page does);
  *      - the project type-checks with the spec in it;
  *      - Playwright runs it: at least one test passed, nothing skipped, failed or flaky.
  *    The spec is first written as tests/ui/generated/<case>.candidate.spec.ts. Only if every gate passes AND no
@@ -105,13 +107,42 @@ function extractCode(answer) {
   return block ? block[1].trim() + '\n' : null;
 }
 
-/** Lines of the spec that break the layering rules (comments are ignored). */
-function rawSelectorViolations(code) {
-  const forbidden = /\bgetBy(TestId|Role|Text|Label|Placeholder|AltText|Title)\b|\.locator\(|\$\(|\$\$\(|waitForTimeout|xpath=|css=/;
+/** Code lines of the spec with their numbers; comment lines are left out. */
+function codeLines(code) {
   return code
     .split('\n')
     .map((line, i) => ({ line: i + 1, text: line.trim() }))
-    .filter(({ text }) => !text.startsWith('//') && !text.startsWith('*') && forbidden.test(text));
+    .filter(({ text }) => !text.startsWith('//') && !text.startsWith('*'));
+}
+
+/** Lines of the spec that break the layering rules: locators, string selectors on page, page scripts, sleeps. */
+function rawSelectorViolations(code) {
+  const forbidden = new RegExp(
+    [
+      String.raw`\bgetBy(TestId|Role|Text|Label|Placeholder|AltText|Title)\b`,
+      String.raw`\.locator\(`,
+      String.raw`\$\(`,
+      String.raw`\$\$\(`,
+      String.raw`\$\$?eval\(`,
+      String.raw`\bpage\.(click|dblclick|fill|type|press|check|uncheck|hover|tap|selectOption|setInputFiles|focus|evaluate)\(`,
+      'waitForTimeout',
+      'xpath=',
+      'css=',
+    ].join('|'),
+  );
+  return codeLines(code).filter(({ text }) => forbidden.test(text));
+}
+
+/**
+ * A spec that passes must also be able to fail: it needs assertions, and none of them may be on a constant
+ * (expect(true), expect(1), expect('x')), which passes whatever the page does.
+ */
+function assertionCheck(code) {
+  const lines = codeLines(code);
+  const assertions = lines.filter(({ text }) => /\bexpect(\.poll)?\(/.test(text));
+  const constant = String.raw`\bexpect\(\s*(true|false|null|undefined|-?\d+(\.\d+)?|'[^']*'|"[^"]*"|\x60[^\x60$]*\x60)\s*[,)]`;
+  const trivial = lines.filter(({ text }) => new RegExp(constant).test(text));
+  return { count: assertions.length, trivial };
 }
 
 const npx = (args, extra = {}) =>
@@ -135,7 +166,7 @@ const result = {
   provider,
   model: model ?? 'claude-cli default',
   generatedInSeconds,
-  gates: { codeBlock: code !== null, rawSelectors: [], typecheck: 'not run', run: null },
+  gates: { codeBlock: code !== null, rawSelectors: [], assertions: null, typecheck: 'not run', run: null },
   passed: false,
   savedAs: null,
 };
@@ -151,6 +182,11 @@ if (!code) finish('No ```ts block in the model answer; nothing was written to te
 
 result.gates.rawSelectors = rawSelectorViolations(code);
 if (result.gates.rawSelectors.length > 0) finish('Raw selectors in the generated spec; nothing was written to tests/.\n');
+
+result.gates.assertions = assertionCheck(code);
+if (result.gates.assertions.count === 0 || result.gates.assertions.trivial.length > 0) {
+  finish('The spec has no assertions or asserts on a constant, so it cannot fail; nothing was written to tests/.\n');
+}
 
 // ---- candidate: typecheck + run ----------------------------------------------------------------------------------
 const generatedDir = path.join(root, 'tests', 'ui', 'generated');
