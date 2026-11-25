@@ -8,6 +8,11 @@ export function parsePrice(label: string | null): number {
   return Number(match[1]);
 }
 
+/** A price the way the site prints it: 29.99 → "$29.99", 4 → "$4.00". */
+export function formatPrice(value: number): string {
+  return `$${value.toFixed(2)}`;
+}
+
 /** Rounds to cents the way a price is shown on the site. */
 export function cents(value: number): number {
   return Math.round(value * 100) / 100;

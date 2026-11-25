@@ -33,6 +33,11 @@ export class CheckoutPage {
     this.completeHeader = page.getByTestId('complete-header');
   }
 
+  /** "Back Home" on the completion page (its data-test is "back-to-products"). */
+  async backHome() {
+    await step('Press "Back Home"', () => this.page.getByTestId('back-to-products').click());
+  }
+
   async fillCustomer(customer: Customer) {
     await step(`Fill in the customer form ("${customer.firstName}" / "${customer.lastName}" / "${customer.postalCode}") and continue`, async () => {
       await this.firstName.fill(customer.firstName);

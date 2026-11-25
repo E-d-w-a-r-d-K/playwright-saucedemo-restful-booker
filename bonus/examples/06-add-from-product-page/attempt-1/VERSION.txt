@@ -1,0 +1,4 @@
+Attempt 1, made with the gated version of bonus/generate.mjs.
+ProductPage had no "Add to cart" action, so the model did not invent a selector: it wrote which method was missing
+and skipped the test. The pipeline rejected the run (1 skipped → FAILED) and removed the candidate from tests/.
+After ProductPage.addToCart() / removeFromCart() were added, the same case was run again — the files one level up.

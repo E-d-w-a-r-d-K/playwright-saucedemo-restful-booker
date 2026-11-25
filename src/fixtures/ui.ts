@@ -3,6 +3,8 @@ import { env } from '../../config/env';
 import { type Username, USERS } from '../data/users';
 import { CartPage } from '../pages/CartPage';
 import { CheckoutPage } from '../pages/CheckoutPage';
+import { Footer } from '../pages/components/Footer';
+import { DynamicCatalogPage } from '../pages/DynamicCatalogPage';
 import { Header } from '../pages/components/Header';
 import { InventoryPage } from '../pages/InventoryPage';
 import { LoginPage } from '../pages/LoginPage';
@@ -17,6 +19,8 @@ interface UiFixtures {
   cart: CartPage;
   checkout: CheckoutPage;
   header: Header;
+  footer: Footer;
+  dynamicCatalog: DynamicCatalogPage;
   /** Logs the given user in through the session cookie (no form) and opens the inventory page. */
   loginAs: (user: Username) => Promise<InventoryPage>;
   /** standard_user is logged in (session cookie, no form) and the inventory page is open. */
@@ -30,6 +34,8 @@ export const test = base.extend<UiFixtures>({
   cart: async ({ page }, use) => use(new CartPage(page)),
   checkout: async ({ page }, use) => use(new CheckoutPage(page)),
   header: async ({ page }, use) => use(new Header(page)),
+  footer: async ({ page }, use) => use(new Footer(page)),
+  dynamicCatalog: async ({ page }, use) => use(new DynamicCatalogPage(page)),
   loginAs: async ({ context, inventory }, use) => {
     await use(user =>
       step(`Log in as "${user}" (session cookie, no form) and open the inventory`, async () => {

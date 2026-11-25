@@ -1,4 +1,4 @@
 Produced by the FIRST version of bonus/generate.mjs.
 result.json says "passed": true although run.log says "1 skipped": that is exactly the pipeline bug described in
 AI_WORKLOG.md (item "skipped counted as passed"). The file is kept unchanged as evidence; the current version of the
-script rejects such a run (see bonus/examples/06-add-from-product-page/result.json).
+script rejects such a run (see bonus/examples/06-add-from-product-page/attempt-1/result.json).

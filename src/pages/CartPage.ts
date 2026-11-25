@@ -16,6 +16,10 @@ export class CartPage {
     await step('Open the cart page by URL', () => this.page.goto('/cart.html'));
   }
 
+  async continueShopping() {
+    await step('Press "Continue Shopping"', () => this.page.getByTestId('continue-shopping').click());
+  }
+
   async products(): Promise<Product[]> {
     const names = await this.items.getByTestId('inventory-item-name').allTextContents();
     const prices = await this.items.getByTestId('inventory-item-price').allTextContents();

@@ -1,8 +1,10 @@
 import { expect, test } from '../../src/fixtures/ui';
 import { CUSTOMER, WHITESPACE_CUSTOMER } from '../../src/data/checkout';
 import { MESSAGES } from '../../src/data/messages';
-import { product } from '../../src/data/products';
+import { DYNAMIC_CATALOG_VIEWPORT, LAZY_LOAD_BATCH, LAZY_LOAD_DUPLICATE, LAZY_LOAD_INITIAL, SLIDER_INTERVAL_MS } from '../../src/data/dynamicCatalog';
+import { type Product, product } from '../../src/data/products';
 import { ROUTES } from '../../src/data/routes';
+import { advanceClock, freezeClock } from '../../src/utils/clock';
 import { knownBug } from '../../src/utils/knownBug';
 import { area, EPIC } from '../../src/utils/report';
 
@@ -69,4 +71,58 @@ test.describe('Known bugs', { tag: '@known-bug', ...area(EPIC.ui, 'Known bugs') 
       observed: () => expect(loggedIn.cartButton(onesie), 'the product button still says "Remove"').toHaveText('Remove'),
     });
   });
+
+  test.describe('Dynamic catalogue', () => {
+    test.use({ viewport: DYNAMIC_CATALOG_VIEWPORT });
+
+    test('BUG-UI-4: the slider leaves a product the user just chose before the autoplay interval', async ({ page, loggedIn, dynamicCatalog }) => {
+      // Arrange: a frozen clock, so "10 ms before the next autoplay tick" is exact
+      await freezeClock(page);
+      await dynamicCatalog.open('slider');
+      const order = await dynamicCatalog.sliderDotProducts();
+      const chosen = order.length - 2; // any dot but the last, so "the next product" needs no wrap-around
+      await advanceClock(page, SLIDER_INTERVAL_MS - 10);
+
+      // Act: the user picks a product, then a short moment passes
+      await dynamicCatalog.chooseInSlider(chosen);
+      await expect(dynamicCatalog.sliderName, 'the chosen product is shown').toHaveText(order[chosen]);
+      await advanceClock(page, 100);
+
+      // Assert
+      await knownBug('BUG-UI-4', {
+        severity: 'minor',
+        correct: () => expect(dynamicCatalog.sliderName, 'the chosen product stays on screen').toHaveText(order[chosen], { timeout: 1000 }),
+        observed: () => expect(dynamicCatalog.sliderName, 'the slider already moved to the next product').toHaveText(order[chosen + 1]),
+      });
+    });
+
+    test('BUG-UI-5: the lazy-load catalogue lists one product twice in a row', async ({ loggedIn, dynamicCatalog }) => {
+      // Arrange
+      await dynamicCatalog.open('lazy-load');
+      await expect(dynamicCatalog.lazyItems, 'the first batches are shown').toHaveCount(LAZY_LOAD_INITIAL);
+
+      // Act: load one more batch, so the list is long enough to hold the duplicate, and bring its cards into view
+      await dynamicCatalog.scrollToEndOfList();
+      const shown = LAZY_LOAD_INITIAL + LAZY_LOAD_BATCH;
+      await expect(dynamicCatalog.lazyItems, 'one more batch is added').toHaveCount(shown);
+      await dynamicCatalog.showLazyCards(0, shown - 1);
+      const repeats = async () => adjacentRepeats((await dynamicCatalog.lazyProducts()).slice(0, shown));
+
+      // Assert
+      await knownBug('BUG-UI-5', {
+        severity: 'minor',
+        correct: () => expect.poll(repeats, { message: 'no card repeats the card before it', timeout: 2000 }).toEqual([]),
+        observed: () => expect.poll(repeats, { message: 'exactly this card repeats the one before it' }).toEqual([LAZY_LOAD_DUPLICATE]),
+      });
+    });
+  });
 });
+
+/**
+ * Cards whose name equals the previous card's name, with their 0-based position — or "still loading" while any card
+ * is a placeholder, so a poll keeps reading until every shown card has loaded.
+ */
+function adjacentRepeats(cards: Product[]): Array<{ position: number; name: string }> | 'still loading' {
+  if (cards.some(card => !Number.isFinite(card.price))) return 'still loading';
+  return cards.flatMap((card, i) => (i > 0 && card.name === cards[i - 1].name ? [{ position: i, name: card.name }] : []));
+}

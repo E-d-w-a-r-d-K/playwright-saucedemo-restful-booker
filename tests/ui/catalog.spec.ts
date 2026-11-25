@@ -1,7 +1,8 @@
 import { expect, test } from '../../src/fixtures/ui';
 import { type SortOption } from '../../src/pages/InventoryPage';
-import { CATALOGUE, type Product, product } from '../../src/data/products';
+import { CATALOGUE, DESCRIPTIONS, type Product } from '../../src/data/products';
 import { ROUTES } from '../../src/data/routes';
+import { formatPrice } from '../../src/utils/money';
 import { area, EPIC } from '../../src/utils/report';
 
 const byName = (a: Product, b: Product) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
@@ -15,20 +16,21 @@ test.describe('Catalogue', area(EPIC.ui, 'Catalogue'), () => {
     await expect.poll(() => loggedIn.products(), { message: 'the inventory shows exactly these products in this order' }).toEqual(CATALOGUE);
   });
 
-  test('product page shows the same name, price and description as its card', async ({ page, loggedIn, productPage }) => {
-    // Arrange
-    const jacket = product('Sauce Labs Fleece Jacket');
-    const description = await loggedIn.description(jacket.name);
+  for (const item of CATALOGUE) {
+    test(`product page of "${item.name}" shows the same name, price and description as its card`, async ({ page, loggedIn, productPage }) => {
+      // Arrange: the card shows the product's own description
+      expect(await loggedIn.description(item.name), 'the card shows the product description').toBe(DESCRIPTIONS[item.name]);
 
-    // Act
-    await loggedIn.openProduct(jacket.name);
+      // Act
+      await loggedIn.openProduct(item.name);
 
-    // Assert
-    await expect(page, 'a product page is open').toHaveURL(ROUTES.product);
-    await expect(productPage.name, 'the product page shows the name from the card').toHaveText(jacket.name);
-    await expect(productPage.price, 'the product page shows the price from the card').toHaveText(`$${jacket.price.toFixed(2)}`);
-    await expect(productPage.description, 'the product page shows the description from the card').toHaveText(description);
-  });
+      // Assert
+      await expect(page, 'a product page is open').toHaveURL(ROUTES.product);
+      await expect(productPage.name, 'the product page shows the name from the card').toHaveText(item.name);
+      await expect(productPage.price, 'the product page shows the price from the card').toHaveText(formatPrice(item.price));
+      await expect(productPage.description, 'the product page shows the same description').toHaveText(DESCRIPTIONS[item.name]);
+    });
+  }
 
   /*
    * A to Z is also the default order, so selecting it on a fresh page would prove nothing.

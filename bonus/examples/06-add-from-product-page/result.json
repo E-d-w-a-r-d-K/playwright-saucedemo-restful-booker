@@ -2,19 +2,23 @@
   "case": "06-add-from-product-page",
   "provider": "claude-cli",
   "model": "claude-cli default",
-  "generatedInSeconds": 54,
+  "generatedInSeconds": 12,
   "gates": {
     "codeBlock": true,
     "rawSelectors": [],
+    "assertions": {
+      "count": 3,
+      "trivial": []
+    },
     "typecheck": "ok",
     "run": {
       "exitCode": 0,
-      "passed": 0,
+      "passed": 1,
       "failed": 0,
-      "skipped": 1,
+      "skipped": 0,
       "flaky": 0
     }
   },
-  "passed": false,
-  "savedAs": null
+  "passed": true,
+  "savedAs": "tests/ui/generated/06-add-from-product-page.spec.ts"
 }

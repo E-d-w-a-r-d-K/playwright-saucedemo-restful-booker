@@ -2,7 +2,15 @@ import { type APIRequestContext, type APIResponse, test } from '@playwright/test
 import { type Booking, CREDENTIALS } from '../data/booking';
 import { step } from '../utils/step';
 
-type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
+type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+/** Query filters GET /booking documents: names, and dates "on or after" (CCYY-MM-DD). */
+export interface BookingFilter {
+  firstname?: string;
+  lastname?: string;
+  checkin?: string;
+  checkout?: string;
+}
 
 /**
  * Thin wrapper over restful-booker: one method per endpoint, returns the raw response.
@@ -37,12 +45,34 @@ export class BookingClient {
     return (await response.json()).bookingid;
   }
 
+  /** GET /booking — ids of all bookings, or of those matching the documented filters. */
+  list(filter: BookingFilter = {}): Promise<APIResponse> {
+    const query = new URLSearchParams(Object.entries(filter).filter((entry): entry is [string, string] => entry[1] !== undefined)).toString();
+    return this.call('GET', query ? `/booking?${query}` : '/booking');
+  }
+
+  /** The ids GET /booking returns for the filter; fails loudly if the search itself fails. */
+  async listIds(filter: BookingFilter = {}): Promise<number[]> {
+    const response = await this.list(filter);
+    if (!response.ok()) throw new Error(`GET /booking → ${response.status()}: ${await response.text()}`);
+    return ((await response.json()) as Array<{ bookingid: number }>).map(b => b.bookingid);
+  }
+
   get(id: number): Promise<APIResponse> {
     return this.call('GET', `/booking/${id}`);
   }
 
   update(id: number, booking: Booking, token?: string): Promise<APIResponse> {
     return this.call('PUT', `/booking/${id}`, { data: booking, token });
+  }
+
+  partialUpdate(id: number, change: Partial<Booking>, token?: string): Promise<APIResponse> {
+    return this.call('PATCH', `/booking/${id}`, { data: change, token });
+  }
+
+  /** GET /ping — the documented health check. */
+  ping(): Promise<APIResponse> {
+    return this.call('GET', '/ping');
   }
 
   delete(id: number, token?: string): Promise<APIResponse> {

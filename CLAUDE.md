@@ -25,6 +25,11 @@ for https://restful-booker.herokuapp.com on Playwright + TypeScript, reported wi
 - Only `tests/ui/login.spec.ts` logs in through the form; other UI tests use `loggedIn` / `loginAs` (session cookie).
 - No `waitForTimeout`; rely on web-first assertions (`toHaveText`, `toHaveURL`, `toBeVisible`); read lists with
   `expect.poll(() => page.products())` so the read retries until the page settles.
+- Pages driven by timers (Dynamic Catalog: spinner delay, slider autoplay) are tested with a controlled clock:
+  `freezeClock(page)` before opening the page, then `advanceClock(page, ms)` (src/utils/clock.ts). Check both sides of
+  a timing boundary (just before and at it); never wait real time for a timer. A random delay is pinned to each end
+  of its range with `pinRandom(page, 0 | 0.9999999)` (the fake clock does not control Math.random). `advanceClock` and
+  `DynamicCatalogPage.open` wait until the page has applied the fired timers and registered new ones.
 - Assert values, not presence: exact texts, full lists, numbers. A test must be able to fail on a real regression —
   e.g. a sort test must start from a different order, not from the default one.
 - Every test is independent: its own login, its own data. API tests create their own bookings with a unique

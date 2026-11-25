@@ -1,5 +1,7 @@
+import { type BookingClient } from '../../src/api/BookingClient';
 import { expect, test } from '../../src/fixtures/api';
-import { INVALID_BOOKINGS, INVALID_CREDENTIALS, newBooking } from '../../src/data/booking';
+import { INVALID_BOOKINGS, INVALID_CREDENTIALS, newBooking, NON_EXISTENT_ID, PARTIAL_CHANGE } from '../../src/data/booking';
+import { shiftDate } from '../../src/utils/dates';
 import { knownBug } from '../../src/utils/knownBug';
 import { area, EPIC } from '../../src/utils/report';
 
@@ -56,6 +58,80 @@ test.describe('Known API bugs', { tag: '@known-bug', ...area(EPIC.api, 'Known bu
       observed: async () => {
         expect(response.status(), 'the second DELETE answers 405').toBe(405);
         expect(await response.text(), 'the body is "Method Not Allowed"').toBe('Method Not Allowed');
+      },
+    });
+  });
+
+  // PUT and PATCH are separate tests: a fix of one of them then shows as "bug fixed" for exactly that method.
+  const missingIdCalls = [
+    { method: 'PUT', call: (client: BookingClient, token: string) => client.update(NON_EXISTENT_ID, newBooking(), token) },
+    { method: 'PATCH', call: (client: BookingClient, token: string) => client.partialUpdate(NON_EXISTENT_ID, PARTIAL_CHANGE, token) },
+  ];
+  for (const { method, call } of missingIdCalls) {
+    test(`BUG-API-3: ${method} of a booking that does not exist answers 405`, async ({ client, token }) => {
+      // Act
+      const response = await call(client, token);
+
+      // Assert
+      await knownBug('BUG-API-3', {
+        severity: 'minor',
+        correct: () => expect(response.status(), `${method} of a missing booking answers 404`).toBe(404),
+        observed: async () => {
+          expect(response.status(), `${method} of a missing booking answers 405`).toBe(405);
+          expect(await response.text(), 'the body is "Method Not Allowed"').toBe('Method Not Allowed');
+        },
+      });
+    });
+  }
+
+  // GET /booking documents its date filters as "on or after the given date"; the booking's own date is the boundary.
+  test('BUG-API-7: the check-in filter misses bookings that check in on the given date', async ({ client, cleanup }) => {
+    // Arrange
+    const booking = newBooking();
+    const id = await client.createId(booking);
+    cleanup(id);
+    const { checkin } = booking.bookingdates;
+
+    // Act
+    const sameDay = await client.listIds({ checkin });
+    const dayBefore = await client.listIds({ checkin: shiftDate(checkin, -1) });
+
+    // Assert
+    await knownBug('BUG-API-7', {
+      severity: 'normal',
+      correct: () => expect(sameDay, 'check-in on the given date counts as "on or after": found').toContain(id),
+      observed: () => {
+        expect(sameDay, 'the booking checking in on that very date is missing').not.toContain(id);
+        // the filter itself works: one day earlier it finds the booking, so it is "strictly after", not broken
+        expect(dayBefore, 'with the day before, the same booking is found').toContain(id);
+      },
+    });
+  });
+
+  test('BUG-API-8: the check-out filter works the other way round', async ({ client, cleanup }) => {
+    // Arrange
+    const booking = newBooking();
+    const id = await client.createId(booking);
+    cleanup(id);
+    const { checkout } = booking.bookingdates;
+
+    // Act: the booking checks out after the day before, on the day itself, and before the day after
+    const dayBefore = await client.listIds({ checkout: shiftDate(checkout, -1) });
+    const sameDay = await client.listIds({ checkout });
+    const dayAfter = await client.listIds({ checkout: shiftDate(checkout, 1) });
+
+    // Assert
+    await knownBug('BUG-API-8', {
+      severity: 'normal',
+      correct: () => {
+        expect(dayBefore, 'check-out on or after the day before: found').toContain(id);
+        expect(sameDay, 'check-out on or after the same day: found').toContain(id);
+        expect(dayAfter, 'check-out on or after the day after: not found').not.toContain(id);
+      },
+      observed: () => {
+        expect(dayBefore, 'the filter misses a booking that checks out later').not.toContain(id);
+        expect(sameDay, 'the same day is included').toContain(id);
+        expect(dayAfter, 'the filter finds a booking that checks out earlier').toContain(id);
       },
     });
   });

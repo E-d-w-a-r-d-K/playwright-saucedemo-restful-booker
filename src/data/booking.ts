@@ -46,6 +46,9 @@ export function changedBooking(original: Booking): Booking {
   };
 }
 
+/** A partial update: only these fields change, everything else must stay as it was. */
+export const PARTIAL_CHANGE = { firstname: 'Patched', additionalneeds: 'Late checkout' } satisfies Partial<Booking>;
+
 /** Invalid bodies for the negative and known-bug tests. */
 export const INVALID_BOOKINGS = {
   missingRequiredFields: { firstname: 'OnlyName' },
