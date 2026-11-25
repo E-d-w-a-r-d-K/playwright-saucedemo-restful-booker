@@ -1,5 +1,6 @@
 import { type Locator, type Page } from '@playwright/test';
 import { type Product } from '../data/products';
+import { ROUTES } from '../data/routes';
 import { parsePrice } from '../utils/money';
 import { step } from '../utils/step';
 
@@ -64,12 +65,19 @@ export class InventoryPage {
   }
 
   async openProduct(name: string) {
-    await step(`Open "${name}" by its name`, () => this.card(name).getByTestId('inventory-item-name').click());
+    await step(`Open "${name}" by its name`, async () => {
+      await this.card(name).getByTestId('inventory-item-name').click();
+      // the action ends on the product page: until then the inventory names also match the product page locators
+      await this.page.waitForURL(ROUTES.product);
+    });
   }
 
   /** Opens the product page through the picture link (data-test="item-<id>-img-link"). */
   async openProductByImage(name: string) {
-    await step(`Open "${name}" by its picture`, () => this.card(name).getByTestId(/^item-\d+-img-link$/).click());
+    await step(`Open "${name}" by its picture`, async () => {
+      await this.card(name).getByTestId(/^item-\d+-img-link$/).click();
+      await this.page.waitForURL(ROUTES.product);
+    });
   }
 
   private card(name: string): Locator {

@@ -10,7 +10,9 @@ export default defineConfig({
     toHaveScreenshot: {
       animations: 'disabled',
       caret: 'hide',
-      maxDiffPixelRatio: 0.01,
+      // baselines are per platform, so a matching page differs by a few anti-aliased pixels at most;
+      // a ratio (1% of a full page is ~20 000 px) would let a whole broken product picture through
+      maxDiffPixels: 100,
       stylePath: './tests/visual/screenshot.css',
     },
   },
